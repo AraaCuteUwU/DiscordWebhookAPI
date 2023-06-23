@@ -41,13 +41,15 @@ class DiscordWebhookSendTask extends AsyncTask {
 	protected $message;
 
 	public function __construct(Webhook $webhook, Message $message){
-		$this->webhook = $webhook;
-		$this->message = $message;
+		$this->webhook = igbinary_serialize($webhook);
+		$this->message = igbinary_serialize($message);
 	}
 
-	public function onRun(){
-		$ch = curl_init($this->webhook->getURL());
-		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($this->message));
+	public function onRun(): void {
+        $webhook = igbinary_unserialize($this->webhook);
+        $message = igbinary_unserialize($this->message);
+		$ch = curl_init($webhook->getURL());
+		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($message));
 		curl_setopt($ch, CURLOPT_POST,true);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
@@ -57,10 +59,10 @@ class DiscordWebhookSendTask extends AsyncTask {
 		curl_close($ch);
 	}
 
-	public function onCompletion(Server $server){
+	public function onCompletion(): void {
 		$response = $this->getResult();
 		if(!in_array($response[1], [200, 204])){
-			$server->getLogger()->error("[DiscordWebhookAPI] Got error ({$response[1]}): " . $response[0]);
+			Server::getInstance()->getLogger()->error("[DiscordWebhookAPI] Got error ({$response[1]}): " . $response[0]);
 		}
 	}
 }
